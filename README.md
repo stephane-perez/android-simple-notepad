@@ -5,15 +5,33 @@ A native Kotlin + Jetpack Compose implementation of the design in
 "Classical" editorial design language (warm near-white ground, gold accent used only as
 stroke/text, hairline dividers, serif chrome with monospace editor content).
 
+> **AI authorship disclosure.** Every line of code, configuration, and documentation in
+> this repository — the app itself, the Gradle setup, the CI/CD workflow, and this
+> README — was designed and written by an AI (Claude, Anthropic), working from the
+> design handoff and iterating on human feedback (bug reports, CI fixes, build
+> troubleshooting). No line was hand-written by a person; a human reviewed the result,
+> ran it, and reported back issues that were then fixed by the same AI.
+
 ## Requirements
-- Android Studio Koala (2024.1) or newer
 - JDK 17
 - Android SDK 34 (minSdk 26)
+- Android Studio Koala (2024.1) or newer — optional, see "Building without Android
+  Studio" below.
 
 ## Getting started
 Open this folder (`android-simple-notepad/`) directly in Android Studio — it's a
 self-contained Gradle project (Gradle 8.7, AGP 8.5.2, Kotlin 1.9.24) — and hit Run.
 No API keys, accounts, or network access are required; the app never touches the network.
+
+## Building without Android Studio
+No local Android SDK is required. Every push to `main` (and every pull request) builds
+a debug APK via GitHub Actions — see `.github/workflows/build.yml`:
+- **Every push/PR**: builds `simple-notepad.apk` and uploads it as a workflow artifact
+  (Actions tab → the run → Artifacts).
+- **Pushing a tag starting with `v`** (e.g. `v1.0.0`, created from the Releases page or
+  `git tag v1.0.0 && git push origin v1.0.0`): additionally publishes a public GitHub
+  Release with `simple-notepad.apk` attached, downloadable by anyone if the repo is
+  public.
 
 ## What's implemented
 - **Editor** — top app bar (New / Open / Save / Find / More) with a dirty-state dot,
@@ -36,6 +54,9 @@ No API keys, accounts, or network access are required; the app never touches the
 - **File access** — Storage Access Framework: `ACTION_OPEN_DOCUMENT` for Open,
   `ACTION_CREATE_DOCUMENT` for a new buffer's first Save, `ContentResolver` streams after
   that, with persistable URI permissions taken so re-opened files survive restarts.
+- **Edge-to-edge display** — content is padded with `WindowInsets.safeDrawing` so the
+  top app bar and bottom status bar/toast clear the status and navigation bars, while
+  the background still paints edge-to-edge behind them.
 
 ## Design tokens
 All colors, type sizes, spacing, and radii are transcribed from the handoff into
