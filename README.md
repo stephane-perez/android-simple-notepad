@@ -57,6 +57,9 @@ a debug APK via GitHub Actions — see `.github/workflows/build.yml`:
 - **Edge-to-edge display** — content is padded with `WindowInsets.safeDrawing` so the
   top app bar and bottom status bar/toast clear the status and navigation bars, while
   the background still paints edge-to-edge behind them.
+- **System Back button** — only intercepted when something is open to close first
+  (overflow menu, find strip, Open overlay, unsaved-changes dialog); otherwise it falls
+  through to the system default so the app exits/minimizes normally.
 
 ## Design tokens
 All colors, type sizes, spacing, and radii are transcribed from the handoff into
