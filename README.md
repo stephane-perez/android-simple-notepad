@@ -33,6 +33,17 @@ a debug APK via GitHub Actions — see `.github/workflows/build.yml`:
   Release with `simple-notepad.apk` attached, downloadable by anyone if the repo is
   public.
 
+## Versioning
+`versionName` / `versionCode` are **not** hardcoded in `app/build.gradle.kts` — they're
+passed in at build time by the CI workflow:
+- On a tag push (`v1.2.3`): `versionName = "1.2.3"` (matches the GitHub Release name
+  exactly), `versionCode` = the workflow run number (strictly increasing).
+- On a plain push/PR (no tag): `versionName = "0.0.0-dev.<run number>"`, so a dev build
+  can never be mistaken for a tagged release.
+- Building locally without those flags (e.g. `./gradlew assembleDebug` straight from
+  Android Studio) falls back to `versionName = "0.0.0-dev"`, `versionCode = 1`.
+
+
 ## What's implemented
 - **Editor** — top app bar (New / Open / Save / Find / More) with a dirty-state dot,
   monospace editor with an optional line-number gutter (hidden while wrap is on), and a

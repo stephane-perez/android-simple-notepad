@@ -3,6 +3,13 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+// The person-facing version comes from the GitHub Release tag (e.g. v1.2.3), passed in
+// by the CI workflow as -PversionNameOverride=1.2.3 -PversionCodeOverride=<run number>.
+// Building locally (Android Studio, or ./gradlew without those flags) falls back to a
+// clearly-marked dev version so it's never confused with a real release build.
+val appVersionName: String = (project.findProperty("versionNameOverride") as String?) ?: "0.0.0-dev"
+val appVersionCode: Int = (project.findProperty("versionCodeOverride") as String?)?.toIntOrNull() ?: 1
+
 android {
     namespace = "com.stephaneperez.notepad"
     compileSdk = 34
@@ -11,8 +18,8 @@ android {
         applicationId = "com.stephaneperez.notepad"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
     }
 
     buildTypes {
