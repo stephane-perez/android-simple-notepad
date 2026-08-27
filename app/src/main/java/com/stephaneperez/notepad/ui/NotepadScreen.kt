@@ -61,11 +61,12 @@ fun NotepadScreen(viewModel: NotepadViewModel = viewModel()) {
         }
     }
 
-    // Back behavior: overflow menu -> find strip -> Open overlay -> dialog (cancel) -> system back,
-    // which itself must run the unsaved-changes check before exit. We approximate the final
-    // "exit" step by simply allowing the system back to proceed once nothing above is open,
-    // deferring to New's own dirty-check semantics is out of scope for a bare back-to-exit.
-    BackHandler(enabled = true) {
+    // Only steal the system Back button when something is open to close first
+    // (menu, find strip, Open overlay, confirmation dialog). Otherwise let it fall
+    // through to the system default so the app actually exits/minimizes normally.
+    BackHandler(
+        enabled = state.menuOpen || state.finding || state.browsing || state.confirm != null
+    ) {
         viewModel.onBackPressed()
     }
 
