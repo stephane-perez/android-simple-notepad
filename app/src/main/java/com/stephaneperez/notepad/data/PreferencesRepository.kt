@@ -25,7 +25,7 @@ class PreferencesRepository(private val context: Context) {
         val LAST_URI = stringPreferencesKey("last_uri")
     }
 
-    val wrapFlow: Flow<Boolean> = context.dataStore.data.map { it[Keys.WRAP] ?: false }
+    val wrapFlow: Flow<Boolean> = context.dataStore.data.map { it[Keys.WRAP] ?: true }
     val lineNumbersFlow: Flow<Boolean> = context.dataStore.data.map { it[Keys.LINE_NUMBERS] ?: true }
     val lastUriFlow: Flow<String?> = context.dataStore.data.map { it[Keys.LAST_URI] }
 

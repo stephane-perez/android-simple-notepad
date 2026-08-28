@@ -6,6 +6,7 @@ import android.provider.DocumentsContract
 import android.provider.OpenableColumns
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.stephaneperez.notepad.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -189,7 +190,11 @@ class NotepadViewModel(application: Application) : AndroidViewModel(application)
             }
         }.onSuccess {
             _uiState.update {
-                it.copy(dirty = false, menuOpen = false, toast = "Saved  ${it.filePath}")
+                it.copy(
+                    dirty = false,
+                    menuOpen = false,
+                    toast = context.getString(R.string.toast_saved, it.filePath),
+                )
             }
         }
     }
@@ -254,17 +259,18 @@ class NotepadViewModel(application: Application) : AndroidViewModel(application)
     /** Plain literal, case-sensitive substring replace-all. */
     fun replaceAll() {
         val state = _uiState.value
+        val context = getApplication<Application>()
         if (state.query.isEmpty()) {
-            _uiState.update { it.copy(toast = "No matches") }
+            _uiState.update { it.copy(toast = context.getString(R.string.toast_no_matches)) }
             return
         }
         val occurrences = state.totalMatches
         if (occurrences == 0) {
-            _uiState.update { it.copy(toast = "No matches") }
+            _uiState.update { it.copy(toast = context.getString(R.string.toast_no_matches)) }
             return
         }
         val newText = state.text.replace(state.query, state.replacement)
-        val label = if (occurrences == 1) "1 match replaced" else "$occurrences matches replaced"
+        val label = context.resources.getQuantityString(R.plurals.toast_replaced, occurrences, occurrences)
         _uiState.update {
             it.copy(text = newText, dirty = true, matchIndex = 0, toast = label)
         }

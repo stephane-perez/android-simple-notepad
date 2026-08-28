@@ -1,9 +1,18 @@
-# Simple Notepad (Android)
+# Angerona (Android)
 
 A native Kotlin + Jetpack Compose implementation of the design in
-`design_handoff_android_notepad/README.md` — a local-only, plain-text notepad in the
-"Classical" editorial design language (warm near-white ground, gold accent used only as
-stroke/text, hairline dividers, serif chrome with monospace editor content).
+`design_handoff_android_notepad/README.md` — a local-only, encrypted, plain-text notepad
+in the "Classical" editorial design language (warm near-white ground, gold accent used
+only as stroke/text, hairline dividers, serif chrome with monospace editor content).
+
+### Why "Angerona"?
+
+Angerona was a minor Roman goddess of silence and secrecy. Her statue was shown with a
+bandaged mouth, or a finger held to her lips. She was the keeper of Rome's *secret
+name* — a name the city deliberately never spoke aloud, since revealing it was believed
+to leave the city vulnerable to enemies invoking it in a curse. A fitting, appropriately
+understated namesake for an app whose entire job is to keep written words unreadable to
+anyone but their author.
 
 > **AI authorship disclosure.** Every line of code, configuration, and documentation in
 > this repository — the app itself, the Gradle setup, the CI/CD workflow, and this
@@ -45,7 +54,7 @@ passed in at build time by the CI workflow:
 
 ## File encryption
 
-**Every file saved by Simple Notepad is encrypted on disk** — there is no way to save in
+**Every file saved by Angerona is encrypted on disk** — there is no way to save in
 plain text. Only this app, on this specific device, can read the content back.
 
 **How it works:**
@@ -62,7 +71,7 @@ plain text. Only this app, on this specific device, can read the content back.
   older, unencrypted `.txt` files open without friction.
 
 **Guarantees and limits — read this before trusting it with anything sensitive:**
-- ✅ A `.txt` file produced by Simple Notepad is unreadable by any other app on the
+- ✅ A `.txt` file produced by Angerona is unreadable by any other app on the
   phone, a computer it gets copied to, or anyone who picks it up via Drive/email/USB.
 - ✅ Authenticated (GCM): external tampering with the encrypted file is detected
   (decryption fails) rather than silently accepted.
@@ -107,6 +116,30 @@ signed with the old, ephemeral debug key (anything before this change), the very
 install after this change still requires a manual uninstall — the signatures don't
 match. Every update after that will install cleanly on top.
 
+## Localization
+
+The app ships in **English, French, and Spanish** using Android's native string
+resources (`res/values/strings.xml`, `res/values-fr/strings.xml`,
+`res/values-es/strings.xml`) — no library, no in-app language switcher. Android picks
+the matching resource file automatically based on the phone's system language, and
+falls back to English for any other language.
+
+All user-facing text (button labels, dialog copy, toasts, status bar counts) goes
+through `stringResource()` / `pluralStringResource()` in Compose, or
+`Context.getString()` / `Resources.getQuantityString()` in `NotepadViewModel` for
+toasts, which are generated outside a `@Composable` scope. Plurals (line/lines,
+char/chars, match/matches replaced) use Android's `<plurals>` resource so each language
+handles singular/plural correctly rather than concatenating English-shaped fragments.
+
+Two things are deliberately **not** translated: the app name, and the default filename
+`untitled.txt` — kept invariant so files stay portable and unambiguous regardless of the
+phone's language.
+
+To add a fourth language: add `res/values-<code>/strings.xml` with the same keys as
+`res/values/strings.xml` (Android Studio's Translations Editor lists any missing keys
+for you); no code changes needed.
+
+
 ## What's implemented
 - **Editor** — top app bar (New / Open / Save / Find / More) with a dirty-state dot,
   monospace editor with an optional line-number gutter (hidden while wrap is on), and a
@@ -118,7 +151,8 @@ match. Every update after that will install cleanly on top.
   / `none`), replace-all with a toast (`7 matches replaced` / `1 match replaced` /
   `No matches`), previous/next with wraparound.
 - **Overflow menu** — Word wrap / Line numbers toggles; the Line numbers row shows
-  "Wrap is on" and goes inert while wrap is enabled, per spec.
+  "Wrap is on" and goes inert while wrap is enabled, per spec. Word wrap defaults to
+  **on**.
 - **Unsaved changes dialog** — Cancel / Discard / Save first, with the exact copy from
   the handoff, gating New and Open when the buffer is dirty.
 - **Toast** — bottom-anchored, monospace, 2200ms auto-dismiss.

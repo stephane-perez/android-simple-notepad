@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.stephaneperez.notepad.R
@@ -37,16 +38,23 @@ import com.stephaneperez.notepad.ui.theme.NotepadType
 fun FindReplaceStrip(
     query: String,
     onQueryChanged: (String) -> Unit,
-    matchLabel: String,
+    matchIndex: Int,
+    totalMatches: Int,
     replacement: String,
     onReplacementChanged: (String) -> Unit,
     onReplaceAll: () -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onDone: () -> Unit,
-    hasMatches: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val hasMatches = totalMatches > 0
+    val matchLabel = when {
+        query.isEmpty() -> ""
+        totalMatches == 0 -> stringResource(R.string.find_no_matches)
+        else -> stringResource(R.string.find_match_label, matchIndex + 1, totalMatches)
+    }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -59,7 +67,7 @@ fun FindReplaceStrip(
             NotepadTextField(
                 value = query,
                 onValueChange = onQueryChanged,
-                placeholder = "Find",
+                placeholder = stringResource(R.string.find_placeholder),
                 modifier = Modifier.weight(1f),
             )
             Spacer(Modifier.widthIn(min = 9.dp))
@@ -78,11 +86,11 @@ fun FindReplaceStrip(
             NotepadTextField(
                 value = replacement,
                 onValueChange = onReplacementChanged,
-                placeholder = "Replace with",
+                placeholder = stringResource(R.string.replace_placeholder),
                 modifier = Modifier.weight(1f),
             )
             Spacer(Modifier.widthIn(min = 9.dp))
-            OutlinedSecondaryButton(text = "Replace all", onClick = onReplaceAll)
+            OutlinedSecondaryButton(text = stringResource(R.string.action_replace_all), onClick = onReplaceAll)
         }
 
         Spacer(Modifier.padding(top = 4.5.dp))
@@ -91,18 +99,18 @@ fun FindReplaceStrip(
         Row(verticalAlignment = Alignment.CenterVertically) {
             NotepadIconButton(
                 painter = painterResource(R.drawable.ic_chevron_up),
-                contentDescription = "Previous match",
+                contentDescription = stringResource(R.string.cd_previous_match),
                 onClick = onPrevious,
                 enabled = hasMatches,
             )
             NotepadIconButton(
                 painter = painterResource(R.drawable.ic_chevron_down),
-                contentDescription = "Next match",
+                contentDescription = stringResource(R.string.cd_next_match),
                 onClick = onNext,
                 enabled = hasMatches,
             )
             Spacer(Modifier.weight(1f))
-            GhostButton(text = "Done", onClick = onDone)
+            GhostButton(text = stringResource(R.string.action_done), onClick = onDone)
         }
     }
 }

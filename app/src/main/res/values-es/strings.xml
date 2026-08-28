@@ -1,0 +1,52 @@
+<resources>
+    <string name="app_name">Angerona</string>
+
+    <string name="cd_new">Nuevo</string>
+    <string name="cd_open">Abrir</string>
+    <string name="cd_save">Guardar</string>
+    <string name="cd_find">Buscar</string>
+    <string name="cd_more">Más</string>
+    <string name="cd_back">Atrás</string>
+    <string name="cd_previous_match">Coincidencia anterior</string>
+    <string name="cd_next_match">Coincidencia siguiente</string>
+
+    <string name="find_placeholder">Buscar</string>
+    <string name="replace_placeholder">Reemplazar con</string>
+    <string name="action_replace_all">Reemplazar todo</string>
+    <string name="action_done">Listo</string>
+    <string name="find_no_matches">ninguna</string>
+    <string name="find_match_label">%1$d / %2$d</string>
+
+    <string name="menu_word_wrap">Ajuste de línea</string>
+    <string name="menu_line_numbers">Números de línea</string>
+    <string name="state_on">Activado</string>
+    <string name="state_off">Desactivado</string>
+    <string name="state_wrap_is_on">Ajuste de línea activado</string>
+
+    <string name="open_document_title">Abrir documento</string>
+    <string name="browse_device_storage">Explorar almacenamiento del dispositivo…</string>
+    <string name="file_meta">%1$d B  ·  %2$s</string>
+
+    <string name="dialog_title">Cambios sin guardar</string>
+    <string name="dialog_body_new">«%1$s» tiene cambios sin guardar. Crear un nuevo documento los eliminará.</string>
+    <string name="dialog_body_open">«%1$s» tiene cambios sin guardar. Abrir otro documento los eliminará.</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_discard">Descartar</string>
+    <string name="action_save_first">Guardar primero</string>
+
+    <plurals name="status_lines">
+        <item quantity="one">%1$d línea</item>
+        <item quantity="other">%1$d líneas</item>
+    </plurals>
+    <plurals name="status_chars">
+        <item quantity="one">%1$d carácter</item>
+        <item quantity="other">%1$d caracteres</item>
+    </plurals>
+
+    <string name="toast_saved">Guardado  %1$s</string>
+    <string name="toast_no_matches">Sin coincidencias</string>
+    <plurals name="toast_replaced">
+        <item quantity="one">%1$d coincidencia reemplazada</item>
+        <item quantity="other">%1$d coincidencias reemplazadas</item>
+    </plurals>
+</resources>

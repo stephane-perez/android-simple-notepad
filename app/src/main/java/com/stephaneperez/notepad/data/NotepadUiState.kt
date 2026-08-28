@@ -10,7 +10,7 @@ data class NotepadUiState(
     val uri: Uri? = null,
     val text: String = "",
     val dirty: Boolean = false,
-    val wrap: Boolean = false,
+    val wrap: Boolean = true,
     val lineNumbers: Boolean = true,
     val finding: Boolean = false,
     val query: String = "",
@@ -42,20 +42,5 @@ data class NotepadUiState(
                 index = text.indexOf(query, index + query.length)
             }
             return count
-        }
-
-    /** Derived: `3 / 7`, `none`, or empty when the query is empty. */
-    val matchLabel: String
-        get() {
-            if (query.isEmpty()) return ""
-            val total = totalMatches
-            return if (total == 0) "none" else "${matchIndex + 1} / $total"
-        }
-
-    val counts: String
-        get() {
-            val lines = lineCount
-            val lineWord = if (lines == 1) "line" else "lines"
-            return "$lines $lineWord · $charCount chars"
         }
 }

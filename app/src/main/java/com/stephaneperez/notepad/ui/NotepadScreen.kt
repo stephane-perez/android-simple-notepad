@@ -91,14 +91,14 @@ fun NotepadScreen(viewModel: NotepadViewModel = viewModel()) {
                 FindReplaceStrip(
                     query = state.query,
                     onQueryChanged = viewModel::onQueryChanged,
-                    matchLabel = state.matchLabel,
+                    matchIndex = state.matchIndex,
+                    totalMatches = state.totalMatches,
                     replacement = state.replacement,
                     onReplacementChanged = viewModel::onReplacementChanged,
                     onReplaceAll = viewModel::replaceAll,
                     onPrevious = viewModel::previousMatch,
                     onNext = viewModel::nextMatch,
                     onDone = viewModel::closeFind,
-                    hasMatches = state.totalMatches > 0,
                 )
             }
 
@@ -113,7 +113,8 @@ fun NotepadScreen(viewModel: NotepadViewModel = viewModel()) {
 
             NotepadStatusBar(
                 filePath = state.filePath,
-                counts = state.counts,
+                lineCount = state.lineCount,
+                charCount = state.charCount,
             )
         }
 

@@ -1,3 +1,59 @@
 <resources>
-    <string name="app_name">Simple Notepad</string>
+    <string name="app_name">Angerona</string>
+
+    <!-- Top app bar actions (icon content descriptions) -->
+    <string name="cd_new">New</string>
+    <string name="cd_open">Open</string>
+    <string name="cd_save">Save</string>
+    <string name="cd_find">Find</string>
+    <string name="cd_more">More</string>
+    <string name="cd_back">Back</string>
+    <string name="cd_previous_match">Previous match</string>
+    <string name="cd_next_match">Next match</string>
+
+    <!-- Find & replace strip -->
+    <string name="find_placeholder">Find</string>
+    <string name="replace_placeholder">Replace with</string>
+    <string name="action_replace_all">Replace all</string>
+    <string name="action_done">Done</string>
+    <string name="find_no_matches">none</string>
+    <string name="find_match_label">%1$d / %2$d</string>
+
+    <!-- Overflow menu -->
+    <string name="menu_word_wrap">Word wrap</string>
+    <string name="menu_line_numbers">Line numbers</string>
+    <string name="state_on">On</string>
+    <string name="state_off">Off</string>
+    <string name="state_wrap_is_on">Wrap is on</string>
+
+    <!-- Open document overlay -->
+    <string name="open_document_title">Open document</string>
+    <string name="browse_device_storage">Browse device storage…</string>
+    <string name="file_meta">%1$d B  ·  %2$s</string>
+
+    <!-- Unsaved changes dialog -->
+    <string name="dialog_title">Unsaved changes</string>
+    <string name="dialog_body_new">\u201c%1$s\u201d has edits that are not on disk. Starting a new document will lose them.</string>
+    <string name="dialog_body_open">\u201c%1$s\u201d has edits that are not on disk. Opening another document will lose them.</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_discard">Discard</string>
+    <string name="action_save_first">Save first</string>
+
+    <!-- Status bar -->
+    <plurals name="status_lines">
+        <item quantity="one">%1$d line</item>
+        <item quantity="other">%1$d lines</item>
+    </plurals>
+    <plurals name="status_chars">
+        <item quantity="one">%1$d char</item>
+        <item quantity="other">%1$d chars</item>
+    </plurals>
+
+    <!-- Toasts -->
+    <string name="toast_saved">Saved  %1$s</string>
+    <string name="toast_no_matches">No matches</string>
+    <plurals name="toast_replaced">
+        <item quantity="one">%1$d match replaced</item>
+        <item quantity="other">%1$d matches replaced</item>
+    </plurals>
 </resources>
