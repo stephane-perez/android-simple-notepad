@@ -2,6 +2,8 @@ package com.stephaneperez.notepad.data
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import java.nio.ByteBuffer
+import java.nio.charset.CodingErrorAction
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -26,6 +28,7 @@ object CryptoManager {
     private const val KEY_ALIAS = "simple_notepad_file_key"
     private const val TRANSFORMATION = "AES/GCM/NoPadding"
     private const val GCM_TAG_LENGTH_BITS = 128
+    private const val GCM_TAG_LENGTH_BYTES = GCM_TAG_LENGTH_BITS / 8
     private const val IV_LENGTH_BYTES = 12
 
     /** Files above this size are refused on open and on save — see README, "Size limit". */
@@ -40,11 +43,19 @@ object CryptoManager {
     private const val HEADER_LENGTH = 4 + 1 // MAGIC + version
     private val HEADER = MAGIC + byteArrayOf(FORMAT_VERSION)
 
+    /**
+     * Upper bound on the whole on-disk container (header + IV + plaintext + GCM tag),
+     * enforced by [decrypt] itself before any allocation — not just by callers — so a
+     * huge/malicious file can't force a large `copyOfRange`/`doFinal` allocation just by
+     * being handed to this class directly.
+     */
+    private const val MAX_CONTAINER_BYTES = HEADER_LENGTH + IV_LENGTH_BYTES + MAX_PLAINTEXT_BYTES + GCM_TAG_LENGTH_BYTES
+
     private val keyLock = Any()
 
     /** Only used by [encrypt] — decryption must never have the side effect of minting a key. */
     private fun getOrCreateKey(): SecretKey = synchronized(keyLock) {
-        getExistingKey() ?: run {
+        getExistingKeyLocked() ?: run {
             val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, KEYSTORE_PROVIDER)
             val spec = KeyGenParameterSpec.Builder(
                 KEY_ALIAS,
@@ -63,9 +74,12 @@ object CryptoManager {
         }
     }
 
-    private fun getExistingKey(): SecretKey? = synchronized(keyLock) {
+    private fun getExistingKey(): SecretKey? = synchronized(keyLock) { getExistingKeyLocked() }
+
+    /** Assumes [keyLock] is already held — never call directly, only from a synchronized block. */
+    private fun getExistingKeyLocked(): SecretKey? {
         val keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER).apply { load(null) }
-        keyStore.getKey(KEY_ALIAS, null) as? SecretKey
+        return keyStore.getKey(KEY_ALIAS, null) as? SecretKey
     }
 
     /**
@@ -100,13 +114,19 @@ object CryptoManager {
 
     /**
      * Attempts to decrypt [data] written by [encrypt]. Returns null if [data] doesn't
-     * look like one of our files at all, or if decryption fails for any reason (key
-     * lost to a reinstall/factory reset, corrupted data, tampering — GCM authentication
-     * covers both the ciphertext and the header via AAD). Only ever reads an existing
-     * Keystore key — never creates one as a side effect of a failed open.
+     * look like one of our files at all, is larger than this class can ever have
+     * produced, or if decryption fails for any reason (key lost to a reinstall/factory
+     * reset, corrupted data, tampering — GCM authentication covers both the ciphertext
+     * and the header via AAD, and the decrypted bytes are required to be valid UTF-8).
+     * Only ever reads an existing Keystore key — never creates one as a side effect of a
+     * failed open.
      */
     fun decrypt(data: ByteArray): String? {
         if (!looksEncrypted(data)) return null
+        // Enforced here, not just by callers: refuse an oversized container before any
+        // copyOfRange/doFinal allocation, so this class can't be handed a huge buffer
+        // and OOM regardless of what the caller already checked.
+        if (data.size > MAX_CONTAINER_BYTES) return null
         val key = getExistingKey() ?: return null
 
         val iv = data.copyOfRange(HEADER_LENGTH, HEADER_LENGTH + IV_LENGTH_BYTES)
@@ -116,7 +136,17 @@ object CryptoManager {
             val cipher = Cipher.getInstance(TRANSFORMATION)
             cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv))
             cipher.updateAAD(HEADER)
-            String(cipher.doFinal(ciphertext), Charsets.UTF_8)
+            val plainBytes = cipher.doFinal(ciphertext)
+            // Strict UTF-8 decoding: String(bytes, UTF_8) silently replaces invalid
+            // sequences with U+FFFD instead of failing, which could mask corruption as
+            // ordinary-looking (if garbled) text. Since this class only ever encrypts
+            // valid UTF-8 (see encrypt()), a successful GCM auth check should always
+            // yield valid UTF-8 too; treat anything else as a decryption failure.
+            Charsets.UTF_8.newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT)
+                .decode(ByteBuffer.wrap(plainBytes))
+                .toString()
         }.getOrNull()
     }
 }
