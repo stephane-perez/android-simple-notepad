@@ -25,8 +25,26 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      # On a tag push (v1.2.3), versionName = "1.2.3" so it matches the GitHub Release
+      # name exactly. Otherwise (plain push/PR), it's a clearly-marked dev build.
+      # versionCode always uses the run number so it strictly increases build to build.
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION_NAME="${GITHUB_REF_NAME#v}"
+          else
+            VERSION_NAME="0.0.0-dev.${GITHUB_RUN_NUMBER}"
+          fi
+          echo "Building version $VERSION_NAME (code ${GITHUB_RUN_NUMBER})"
+          echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "version_code=${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
       - name: Build debug APK
-        run: ./gradlew assembleDebug --no-daemon
+        run: >
+          ./gradlew assembleDebug --no-daemon
+          -PversionNameOverride=${{ steps.version.outputs.version_name }}
+          -PversionCodeOverride=${{ steps.version.outputs.version_code }}
 
       - name: Rename APK
         run: cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/simple-notepad.apk
