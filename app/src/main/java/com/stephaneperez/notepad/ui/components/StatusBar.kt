@@ -8,17 +8,23 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.stephaneperez.notepad.R
 import com.stephaneperez.notepad.ui.theme.NotepadColors
 import com.stephaneperez.notepad.ui.theme.NotepadType
 
 @Composable
 fun NotepadStatusBar(
     filePath: String,
-    counts: String,
+    lineCount: Int,
+    charCount: Int,
     modifier: Modifier = Modifier,
 ) {
+    val lines = pluralStringResource(R.plurals.status_lines, lineCount, lineCount)
+    val chars = pluralStringResource(R.plurals.status_chars, charCount, charCount)
+
     Row(
         modifier = modifier
             .background(NotepadColors.surface)
@@ -35,7 +41,7 @@ fun NotepadStatusBar(
             modifier = Modifier.weight(1f, fill = false),
         )
         Text(
-            text = counts,
+            text = "$lines · $chars",
             style = NotepadType.metaAndStatus,
         )
     }

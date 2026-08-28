@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.stephaneperez.notepad.R
@@ -63,27 +64,27 @@ fun NotepadTopBar(
         Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             NotepadIconButton(
                 painter = painterResource(R.drawable.ic_file_plus),
-                contentDescription = "New",
+                contentDescription = stringResource(R.string.cd_new),
                 onClick = onNew,
             )
             NotepadIconButton(
                 painter = painterResource(R.drawable.ic_folder_open),
-                contentDescription = "Open",
+                contentDescription = stringResource(R.string.cd_open),
                 onClick = onOpen,
             )
             NotepadIconButton(
                 painter = painterResource(R.drawable.ic_save),
-                contentDescription = "Save",
+                contentDescription = stringResource(R.string.cd_save),
                 onClick = onSave,
             )
             NotepadIconButton(
                 painter = painterResource(R.drawable.ic_search),
-                contentDescription = "Find",
+                contentDescription = stringResource(R.string.cd_find),
                 onClick = onFind,
             )
             NotepadIconButton(
                 painter = painterResource(R.drawable.ic_more_vertical),
-                contentDescription = "More",
+                contentDescription = stringResource(R.string.cd_more),
                 onClick = onMore,
             )
         }

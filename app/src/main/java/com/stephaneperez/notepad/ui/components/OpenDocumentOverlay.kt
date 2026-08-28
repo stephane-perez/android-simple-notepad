@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.stephaneperez.notepad.R
 import com.stephaneperez.notepad.data.LocalFileEntry
@@ -53,11 +54,11 @@ fun OpenDocumentOverlay(
         ) {
             NotepadIconButton(
                 painter = painterResource(R.drawable.ic_arrow_left),
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.cd_back),
                 onClick = onBack,
             )
             Text(
-                text = "Open document",
+                text = stringResource(R.string.open_document_title),
                 style = NotepadType.overlayTitle,
                 modifier = Modifier.padding(start = 8.dp),
             )
@@ -83,7 +84,7 @@ fun OpenDocumentOverlay(
                 // the app's own documents directory.
                 FileRow(
                     entry = null,
-                    label = "Browse device storage…",
+                    label = stringResource(R.string.browse_device_storage),
                     onClick = onBrowseSystem,
                 )
             }
@@ -120,7 +121,7 @@ private fun FileRow(
         )
         if (entry != null) {
             Text(
-                text = "${entry.sizeBytes} B  ·  ${entry.modified}",
+                text = stringResource(R.string.file_meta, entry.sizeBytes, entry.modified),
                 style = NotepadType.metaAndStatus.copy(color = NotepadColors.inkMeta),
                 modifier = Modifier.padding(top = 2.dp),
             )

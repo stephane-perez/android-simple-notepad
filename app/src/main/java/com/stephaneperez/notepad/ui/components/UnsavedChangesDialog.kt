@@ -21,8 +21,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.stephaneperez.notepad.R
 import com.stephaneperez.notepad.data.PendingAction
 import com.stephaneperez.notepad.ui.theme.NotepadColors
 import com.stephaneperez.notepad.ui.theme.NotepadType
@@ -45,11 +47,14 @@ fun UnsavedChangesDialog(
                 .shadow(12.dp, RoundedCornerShape(7.dp))
                 .padding(18.dp),
         ) {
-            Text(text = "Unsaved changes", style = NotepadType.dialogTitle)
+            Text(text = stringResource(R.string.dialog_title), style = NotepadType.dialogTitle)
 
-            val actionWord = if (pendingAction == PendingAction.NEW) "Starting a new document" else "Opening another document"
+            // Two full sentence templates (one per pending action) rather than composing
+            // a generic template with an inserted phrase — safer to translate correctly
+            // across languages with different sentence structures.
+            val bodyRes = if (pendingAction == PendingAction.NEW) R.string.dialog_body_new else R.string.dialog_body_open
             Text(
-                text = "\u201c$filename\u201d has edits that are not on disk. $actionWord will lose them.",
+                text = stringResource(bodyRes, filename),
                 style = NotepadType.body,
                 modifier = Modifier.padding(top = 14.dp),
             )
@@ -58,9 +63,9 @@ fun UnsavedChangesDialog(
                 modifier = Modifier.padding(top = 14.dp),
                 horizontalArrangement = Arrangement.spacedBy(9.dp, Alignment.End),
             ) {
-                DialogGhostButton(text = "Cancel", onClick = onCancel)
-                DialogOutlinedButton(text = "Discard", onClick = onDiscard)
-                DialogAccentOutlinedButton(text = "Save first", onClick = onSaveFirst)
+                DialogGhostButton(text = stringResource(R.string.action_cancel), onClick = onCancel)
+                DialogOutlinedButton(text = stringResource(R.string.action_discard), onClick = onDiscard)
+                DialogAccentOutlinedButton(text = stringResource(R.string.action_save_first), onClick = onSaveFirst)
             }
         }
     }

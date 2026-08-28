@@ -1,0 +1,52 @@
+<resources>
+    <string name="app_name">Angerona</string>
+
+    <string name="cd_new">Nouveau</string>
+    <string name="cd_open">Ouvrir</string>
+    <string name="cd_save">Enregistrer</string>
+    <string name="cd_find">Rechercher</string>
+    <string name="cd_more">Plus</string>
+    <string name="cd_back">Retour</string>
+    <string name="cd_previous_match">Occurrence précédente</string>
+    <string name="cd_next_match">Occurrence suivante</string>
+
+    <string name="find_placeholder">Rechercher</string>
+    <string name="replace_placeholder">Remplacer par</string>
+    <string name="action_replace_all">Tout remplacer</string>
+    <string name="action_done">Terminé</string>
+    <string name="find_no_matches">aucune</string>
+    <string name="find_match_label">%1$d / %2$d</string>
+
+    <string name="menu_word_wrap">Retour à la ligne</string>
+    <string name="menu_line_numbers">Numéros de ligne</string>
+    <string name="state_on">Activé</string>
+    <string name="state_off">Désactivé</string>
+    <string name="state_wrap_is_on">Retour à la ligne activé</string>
+
+    <string name="open_document_title">Ouvrir un document</string>
+    <string name="browse_device_storage">Parcourir le stockage de l\'appareil…</string>
+    <string name="file_meta">%1$d o  ·  %2$s</string>
+
+    <string name="dialog_title">Modifications non enregistrées</string>
+    <string name="dialog_body_new">« %1$s » contient des modifications non enregistrées. Créer un nouveau document les fera perdre.</string>
+    <string name="dialog_body_open">« %1$s » contient des modifications non enregistrées. Ouvrir un autre document les fera perdre.</string>
+    <string name="action_cancel">Annuler</string>
+    <string name="action_discard">Ignorer</string>
+    <string name="action_save_first">Enregistrer d\'abord</string>
+
+    <plurals name="status_lines">
+        <item quantity="one">%1$d ligne</item>
+        <item quantity="other">%1$d lignes</item>
+    </plurals>
+    <plurals name="status_chars">
+        <item quantity="one">%1$d caractère</item>
+        <item quantity="other">%1$d caractères</item>
+    </plurals>
+
+    <string name="toast_saved">Enregistré  %1$s</string>
+    <string name="toast_no_matches">Aucune occurrence</string>
+    <plurals name="toast_replaced">
+        <item quantity="one">%1$d occurrence remplacée</item>
+        <item quantity="other">%1$d occurrences remplacées</item>
+    </plurals>
+</resources>
