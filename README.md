@@ -35,11 +35,11 @@ No API keys, accounts, or network access are required; the app never touches the
 ## Building without Android Studio
 No local Android SDK is required. Every push to `main` (and every pull request) builds
 a debug APK via GitHub Actions — see `.github/workflows/build.yml`:
-- **Every push/PR**: builds `simple-notepad.apk` and uploads it as a workflow artifact
+- **Every push/PR**: builds `angerona-notepad.apk` and uploads it as a workflow artifact
   (Actions tab → the run → Artifacts).
 - **Pushing a tag starting with `v`** (e.g. `v1.0.0`, created from the Releases page or
   `git tag v1.0.0 && git push origin v1.0.0`): additionally publishes a public GitHub
-  Release with `simple-notepad.apk` attached, downloadable by anyone if the repo is
+  Release with `angerona-notepad.apk` attached, downloadable by anyone if the repo is
   public.
 
 ## Versioning
