@@ -1,0 +1,25 @@
+Angerona est un petit éditeur de texte brut, entièrement local — pas de
+compte, pas de synchronisation cloud, pas de publicité, pas de traqueur. Tout
+reste sur votre appareil.
+
+Chaque fichier enregistré est chiffré en AES-256-GCM, avec une clé conservée
+dans l'Android Keystore qui ne quitte jamais le matériel sécurisé du
+téléphone. Seule Angerona, sur cet appareil précis, peut le relire. Si un
+fichier ne peut pas être déchiffré (par exemple un ancien .txt en clair), il
+s'ouvre simplement tel quel — pas d'erreur, pas de blocage.
+
+Fonctionnalités :
+* Nouveau, Ouvrir, Enregistrer, Rechercher/remplacer, retour à la ligne,
+  numéros de ligne optionnels
+* Chiffré par défaut — impossible d'enregistrer accidentellement en clair
+* Français, anglais et espagnol, selon la langue du téléphone
+* Design visuel chaleureux et éditorial ("Classical") — chrome en serif,
+  éditeur en monospace
+* Aucune permission réseau demandée. Cette app ne peut pas contacter un
+  serveur, même si elle le voulait.
+
+Un mot d'honnêteté : renommer l'app, la réinstaller, ou réinitialiser le
+téléphone invalident tous la clé de chiffrement. Les fichiers déjà chiffrés
+deviennent alors définitivement illisibles — il n'y a pas de mot de passe de
+secours. Merci de lire la section "Chiffrement des fichiers" du README du
+projet avant d'y confier quoi que ce soit d'important.

@@ -1,0 +1,22 @@
+Angerona is a small, local-only text editor for plain-text notes - no accounts,
+no cloud sync, no ads, no tracking. Everything stays on your device.
+
+Every file you save is encrypted with AES-256-GCM, using a key held in the
+Android Keystore that never leaves your phone's secure hardware. Only Angerona,
+on this specific device, can read it back. If a file can't be decrypted (for
+example, an older plain-text .txt file), it simply opens as-is - no error, no
+friction.
+
+Features:
+* New, Open, Save, Find & Replace, word wrap, optional line numbers
+* Encrypted by default - no way to accidentally save in plain text
+* English, French, and Spanish, following your phone's system language
+* Warm, editorial "Classical" visual design - serif chrome, monospace editor
+* No network permission requested. This app cannot phone home even if it
+  wanted to.
+
+A word of honesty: renaming the app, reinstalling it, or restoring your phone
+from a factory reset all invalidate the encryption key. Already-encrypted
+files then become permanently unreadable - there is no password recovery.
+Please read the "File encryption" section of the project README before
+trusting it with anything you can't afford to lose.

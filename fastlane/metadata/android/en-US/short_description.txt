@@ -1,0 +1,1 @@
+A quiet, encrypted plain-text notepad. Local-only, no accounts, no ads.

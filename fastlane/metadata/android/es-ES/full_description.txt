@@ -1,0 +1,25 @@
+Angerona es un pequeño editor de texto plano, totalmente local — sin cuentas,
+sin sincronización en la nube, sin anuncios, sin rastreo. Todo permanece en
+tu dispositivo.
+
+Cada archivo que guardas se cifra con AES-256-GCM, usando una clave alojada
+en el Android Keystore que nunca sale del hardware seguro del teléfono. Solo
+Angerona, en este dispositivo concreto, puede volver a leerlo. Si un archivo
+no se puede descifrar (por ejemplo, un .txt antiguo sin cifrar), simplemente
+se abre tal cual — sin errores, sin fricción.
+
+Funciones:
+* Nuevo, Abrir, Guardar, Buscar y reemplazar, ajuste de línea, números de
+  línea opcionales
+* Cifrado por defecto — no hay forma de guardar en texto plano por error
+* Español, inglés y francés, según el idioma del teléfono
+* Diseño visual cálido y editorial ("Classical") — cabecera serif, editor
+  monoespaciado
+* No se solicita permiso de red. Esta app no puede "llamar a casa" ni aunque
+  quisiera.
+
+Un aviso honesto: renombrar la app, reinstalarla o restaurar el teléfono de
+fábrica invalidan la clave de cifrado. Los archivos ya cifrados quedan
+entonces permanentemente ilegibles — no hay contraseña de recuperación. Por
+favor, lee la sección "File encryption" del README del proyecto antes de
+confiarle algo que no puedas permitirte perder.

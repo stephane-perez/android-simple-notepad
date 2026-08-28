@@ -132,10 +132,28 @@ class NotepadViewModel(application: Application) : AndroidViewModel(application)
         runCatching {
             context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
         }.getOrNull()?.let { bytes ->
-            // Try to decrypt first (our own files). If it's not one of ours, or the key
-            // that encrypted it is gone (reinstall/factory reset), fall back to opening
-            // the bytes as plain text — see README, "Chiffrement".
-            val content = CryptoManager.decrypt(bytes) ?: String(bytes, Charsets.UTF_8)
+            if (bytes.size > CryptoManager.MAX_PLAINTEXT_BYTES) {
+                _uiState.update { it.copy(toast = context.getString(R.string.toast_file_too_large)) }
+                return
+            }
+
+            val content: String
+            if (CryptoManager.looksEncrypted(bytes)) {
+                val decrypted = CryptoManager.decrypt(bytes)
+                if (decrypted == null) {
+                    // This IS one of our files (magic header matches), but it couldn't
+                    // be decrypted — wrong/missing key or tampering. Unlike a genuine
+                    // legacy plain-text file, showing these raw bytes as "text" would
+                    // just be noise; warn instead of silently displaying it.
+                    _uiState.update { it.copy(toast = context.getString(R.string.toast_decrypt_failed)) }
+                    return
+                }
+                content = decrypted
+            } else {
+                // Doesn't look like one of ours at all — an ordinary legacy .txt file.
+                content = String(bytes, Charsets.UTF_8)
+            }
+
             val name = queryDisplayName(uri) ?: "untitled.txt"
             _uiState.update {
                 it.copy(
@@ -171,7 +189,8 @@ class NotepadViewModel(application: Application) : AndroidViewModel(application)
     /**
      * Save writes straight to the current file — no Save-as dialog, no confirmation
      * step. The buffer is always encrypted before it hits disk (see [CryptoManager]);
-     * there is no way to save a Simple Notepad file in plain text.
+     * there is no way to save an Angerona file in plain text. Refuses to write buffers
+     * over the 100 KB limit rather than silently truncating or crashing.
      */
     fun save() {
         val state = _uiState.value
@@ -181,6 +200,11 @@ class NotepadViewModel(application: Application) : AndroidViewModel(application)
         if (uri == null) {
             // Untitled buffer: caller (UI) must launch ACTION_CREATE_DOCUMENT and then
             // call completeSaveAs(uri) with the result.
+            return
+        }
+
+        if (state.text.toByteArray(Charsets.UTF_8).size > CryptoManager.MAX_PLAINTEXT_BYTES) {
+            _uiState.update { it.copy(toast = context.getString(R.string.toast_file_too_large)) }
             return
         }
 

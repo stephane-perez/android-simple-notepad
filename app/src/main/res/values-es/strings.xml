@@ -45,6 +45,8 @@
 
     <string name="toast_saved">Guardado  %1$s</string>
     <string name="toast_no_matches">Sin coincidencias</string>
+    <string name="toast_file_too_large">Archivo demasiado grande para abrir o guardar (máx. 100 KB)</string>
+    <string name="toast_decrypt_failed">No se pudo descifrar — clave ausente o archivo dañado</string>
     <plurals name="toast_replaced">
         <item quantity="one">%1$d coincidencia reemplazada</item>
         <item quantity="other">%1$d coincidencias reemplazadas</item>

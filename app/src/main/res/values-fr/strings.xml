@@ -45,6 +45,8 @@
 
     <string name="toast_saved">Enregistré  %1$s</string>
     <string name="toast_no_matches">Aucune occurrence</string>
+    <string name="toast_file_too_large">Fichier trop volumineux pour être ouvert ou enregistré (max 100 Ko)</string>
+    <string name="toast_decrypt_failed">Déchiffrement impossible — clé absente ou fichier corrompu</string>
     <plurals name="toast_replaced">
         <item quantity="one">%1$d occurrence remplacée</item>
         <item quantity="other">%1$d occurrences remplacées</item>

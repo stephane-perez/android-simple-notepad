@@ -4,11 +4,35 @@ plugins {
 }
 
 // The person-facing version comes from the GitHub Release tag (e.g. v1.2.3), passed in
-// by the CI workflow as -PversionNameOverride=1.2.3 -PversionCodeOverride=<run number>.
-// Building locally (Android Studio, or ./gradlew without those flags) falls back to a
-// clearly-marked dev version so it's never confused with a real release build.
-val appVersionName: String = (project.findProperty("versionNameOverride") as String?) ?: "0.0.0-dev"
-val appVersionCode: Int = (project.findProperty("versionCodeOverride") as String?)?.toIntOrNull() ?: 1
+// by our own CI workflow as -PversionNameOverride=1.2.3 -PversionCodeOverride=<run
+// number>. That override always wins when present.
+//
+// Other build environments — F-Droid's build server in particular, which checks out a
+// tagged commit and runs a plain `gradle assembleRelease` with no custom flags — don't
+// supply it. For those, fall back to deriving the version straight from git: the
+// nearest tag for versionName, and the total commit count for versionCode (monotonic by
+// construction, since it only grows as commits are added). Building with no git history
+// at all (e.g. a source zip with no .git folder) falls back further to a clearly-marked
+// dev version.
+fun gitOutput(vararg args: String): String? = runCatching {
+    val process = ProcessBuilder(listOf("git") + args)
+        .directory(rootDir)
+        .redirectErrorStream(true)
+        .start()
+    val output = process.inputStream.bufferedReader().readText().trim()
+    process.waitFor()
+    output.ifBlank { null }
+}.getOrNull()
+
+val gitVersionName: String? = gitOutput("describe", "--tags", "--abbrev=0")?.removePrefix("v")
+val gitVersionCode: Int? = gitOutput("rev-list", "--count", "HEAD")?.toIntOrNull()
+
+val appVersionName: String = (project.findProperty("versionNameOverride") as String?)
+    ?: gitVersionName
+    ?: "0.0.0-dev"
+val appVersionCode: Int = (project.findProperty("versionCodeOverride") as String?)?.toIntOrNull()
+    ?: gitVersionCode
+    ?: 1
 
 android {
     namespace = "com.stephaneperez.notepad"
