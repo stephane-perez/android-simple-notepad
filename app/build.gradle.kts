@@ -14,6 +14,21 @@ android {
     namespace = "com.stephaneperez.notepad"
     compileSdk = 34
 
+    // Fixed debug signing key, committed to the repo (app/debug.keystore — see README,
+    // "Signature de debug fixe"). Without this, every CI run signs with a fresh,
+    // ephemeral debug key (a new build machine each time), which forces a full
+    // uninstall before every install and destroys the on-device Keystore encryption
+    // key along with it. A stable signature turns every new build into a normal
+    // in-place update instead.
+    signingConfigs {
+        create("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.stephaneperez.notepad"
         minSdk = 26
@@ -23,6 +38,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
