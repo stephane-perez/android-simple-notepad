@@ -13,8 +13,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.BufferedReader
-import java.io.InputStreamReader
 
 /** A file entry surfaced by the in-app "Open document" list (see README §Platform adaptations). */
 data class LocalFileEntry(
@@ -131,10 +129,12 @@ class NotepadViewModel(application: Application) : AndroidViewModel(application)
     private fun loadDocument(uri: Uri) {
         val context = getApplication<Application>()
         runCatching {
-            context.contentResolver.openInputStream(uri)?.use { stream ->
-                BufferedReader(InputStreamReader(stream, Charsets.UTF_8)).readText()
-            }
-        }.getOrNull()?.let { content ->
+            context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+        }.getOrNull()?.let { bytes ->
+            // Try to decrypt first (our own files). If it's not one of ours, or the key
+            // that encrypted it is gone (reinstall/factory reset), fall back to opening
+            // the bytes as plain text — see README, "Chiffrement".
+            val content = CryptoManager.decrypt(bytes) ?: String(bytes, Charsets.UTF_8)
             val name = queryDisplayName(uri) ?: "untitled.txt"
             _uiState.update {
                 it.copy(
@@ -167,7 +167,11 @@ class NotepadViewModel(application: Application) : AndroidViewModel(application)
         }.getOrElse { "/$name" }
     }
 
-    /** Save writes straight to the current file — no Save-as dialog, no confirmation step. */
+    /**
+     * Save writes straight to the current file — no Save-as dialog, no confirmation
+     * step. The buffer is always encrypted before it hits disk (see [CryptoManager]);
+     * there is no way to save a Simple Notepad file in plain text.
+     */
     fun save() {
         val state = _uiState.value
         val uri = state.uri
@@ -181,7 +185,7 @@ class NotepadViewModel(application: Application) : AndroidViewModel(application)
 
         runCatching {
             context.contentResolver.openOutputStream(uri, "wt")?.use { out ->
-                out.write(state.text.toByteArray(Charsets.UTF_8))
+                out.write(CryptoManager.encrypt(state.text))
             }
         }.onSuccess {
             _uiState.update {
