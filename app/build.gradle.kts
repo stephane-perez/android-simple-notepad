@@ -36,7 +36,7 @@ val appVersionCode: Int = (project.findProperty("versionCodeOverride") as String
 
 android {
     namespace = "com.stephaneperez.notepad"
-    compileSdk = 34
+    compileSdk = 36
 
     // Fixed debug signing key, committed to the repo (app/debug.keystore — see README,
     // "Fixed debug signing key"). Without this, every CI run signs with a fresh,
@@ -56,7 +56,7 @@ android {
     defaultConfig {
         applicationId = "com.stephaneperez.notepad"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 36
         versionCode = appVersionCode
         versionName = appVersionName
     }

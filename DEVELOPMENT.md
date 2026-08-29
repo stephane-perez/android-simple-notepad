@@ -183,6 +183,28 @@ that can't be verified without a real Android SDK/build environment, which isn't
 available here — left as an explicit decision for whoever does the next release pass,
 rather than guessed at.
 
+### Round 8 — SDK bump, and closing the loop
+`compileSdk`/`targetSdk` bumped 34 → 36, AGP 8.5.2 → 8.13.0 (stays on the AGP 8.x line
+— AGP 9.x requires Gradle 9 and drops the classic DSL entirely, a much bigger,
+higher-risk migration than this app needs right now), Gradle wrapper 8.7 → 8.13.
+Kotlin (1.9.24), the Compose compiler extension version, and all other dependency
+versions were left untouched to keep this a narrow, single-purpose change — a full
+dependency refresh is a separate task, not bundled in here.
+
+Asked directly whether the last two rounds' worth of findings still held up given
+this is "just a small personal notes app," the second AI recalibrated: the two
+concrete fixes from round 6 (`openDocument()` ignoring `loadDocument()`'s result, and
+the plaintext path not enforcing the same 100 KB limit) were confirmed as the last
+real bugs; everything raised after that — anti-rollback, key versioning, granular
+error states, encrypting `last_uri`, `FLAG_SECURE`, R8, exhaustive dependency
+auditing — was reclassified as optional hardening for a *different, higher* threat
+model (a compromised device, a malicious keyboard, forensic tools), not gaps in the
+one this app actually targets: keep a `.txt` file unreadable to another app or another
+device, and don't lose or corrupt data through careless error handling. Against that
+narrower, honest threat model, the review's own conclusion was that the architecture
+— `CryptoManager` + `NotepadViewModel` + SAF + DataStore — is "already pretty clean."
+That's a reasonable place to stop iterating on this particular audit thread.
+
 ### Round 5 — `NotepadScreen.kt`
 Fixed: **"Save first" on a never-saved buffer closed the unsaved-changes dialog and
 cleared the pending New/Open action the moment the `CreateDocument` picker returned a
