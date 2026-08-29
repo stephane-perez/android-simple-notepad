@@ -116,13 +116,22 @@ class NotepadViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun onDialogSaveFirst() {
-        val pending = _uiState.value.confirm
         if (!save()) {
             // Keep the dialog up (with the failure toast already set by save()) rather
             // than proceeding to New/Open and silently losing the buffer — this was the
-            // main data-loss bug a second-opinion review caught, see README.
+            // main data-loss bug a second-opinion review caught, see DEVELOPMENT.md.
             return
         }
+        resumePendingAction()
+    }
+
+    /**
+     * Clears the pending New/Open action from the unsaved-changes dialog and executes
+     * it — called only once a save has actually succeeded. A no-op if there's no
+     * pending action (e.g. an ordinary Save-As with no dialog involved).
+     */
+    private fun resumePendingAction() {
+        val pending = _uiState.value.confirm
         _uiState.update { it.copy(confirm = null) }
         when (pending) {
             PendingAction.NEW -> performNew()
@@ -301,6 +310,11 @@ class NotepadViewModel(application: Application) : AndroidViewModel(application)
      * Writes to [uri] first and only switches the app's current document over to it —
      * updating `uri`/`filename`/`filePath` — once that write has actually succeeded, so
      * a failed Save-As can't leave the UI pointing at a file that was never written.
+     *
+     * If this Save-As was triggered by the unsaved-changes dialog's "Save first" (for a
+     * buffer that had never been saved), resumes the pending New/Open action only now,
+     * after confirmed success — not the moment the picker returns a URI, which only
+     * means a destination was chosen, not that anything was written there yet.
      */
     fun completeSaveAs(uri: Uri) {
         val context = getApplication<Application>()
@@ -315,6 +329,10 @@ class NotepadViewModel(application: Application) : AndroidViewModel(application)
         val text = _uiState.value.text
         if (!writeEncrypted(uri, text)) {
             _uiState.update { it.copy(toast = context.getString(R.string.toast_save_failed)) }
+            // Deliberately don't touch `confirm` here: if this came from "Save first",
+            // the unsaved-changes dialog stays up (with the failure toast now visible)
+            // instead of silently discarding the buffer — same principle as save()'s
+            // own failure handling.
             return
         }
 
@@ -331,6 +349,7 @@ class NotepadViewModel(application: Application) : AndroidViewModel(application)
             )
         }
         viewModelScope.launch { prefs.setLastUri(uri.toString()) }
+        resumePendingAction()
     }
 
     /** Take persistable permission right after ACTION_OPEN_DOCUMENT returns, before loading. */

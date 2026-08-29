@@ -148,13 +148,16 @@ fun NotepadScreen(viewModel: NotepadViewModel = viewModel()) {
                 onCancel = viewModel::onDialogCancel,
                 onDiscard = viewModel::onDialogDiscard,
                 onSaveFirst = {
-                    // Edge case: if the dirty buffer has never been saved (uri == null),
-                    // "Save first" needs the CreateDocument picker to resolve a destination
-                    // before the pending action can safely proceed. Route through Save,
-                    // then let the person retry New/Open once the file exists.
+                    // Untitled buffer (never saved): the CreateDocument picker must
+                    // resolve a destination first. Deliberately don't touch the
+                    // dialog/pending-action state here — completeSaveAs() resumes the
+                    // pending New/Open action itself, but only once the write is
+                    // confirmed successful, not merely once the picker returns a URI.
+                    // See DEVELOPMENT.md, round 5 — an earlier version closed the
+                    // dialog immediately here, which could lose the pending action if
+                    // the write later failed.
                     if (state.uri == null) {
                         createDocumentLauncher.launch(state.filename)
-                        viewModel.onDialogCancel() // dialog closes; buffer saves via the picker callback
                     } else {
                         viewModel.onDialogSaveFirst()
                     }

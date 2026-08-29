@@ -166,12 +166,6 @@ via the Downloadable Fonts API. License texts are included under
   the text field so numbers track the text vertically. This works well for the common
   case; extremely large documents may want a virtualized editor for best performance —
   out of scope for this handoff-fidelity pass.
-- **"Save first" from the unsaved-changes dialog** when the *current* buffer has never
-  been saved (`uri == null`) routes through the `ACTION_CREATE_DOCUMENT` picker and then
-  closes the dialog; because that picker is asynchronous, the pending New/Open action is
-  not auto-resumed after it returns in this pass — the person can re-trigger New/Open
-  once the save completes. All other paths (existing file, Discard, Cancel) behave
-  exactly as specified.
 - No dark theme: the handoff is explicitly light-only ("warm near-white ground"), so
   none is offered.
 

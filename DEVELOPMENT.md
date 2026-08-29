@@ -131,3 +131,24 @@ Declined, with reasoning:
   `ContentResolver`, never passed to another app through an `Intent`.
 - **DataStore vs. Android Backup** was already resolved in round 1
   (`android:allowBackup="false"`).
+
+### Round 5 — `NotepadScreen.kt`
+Fixed: **"Save first" on a never-saved buffer closed the unsaved-changes dialog and
+cleared the pending New/Open action the moment the `CreateDocument` picker returned a
+URI — before knowing whether the write would actually succeed.** A destination chosen
+by the picker isn't the same as a successful write. `completeSaveAs()` now resumes the
+pending action itself (via a `resumePendingAction()` helper shared with
+`onDialogSaveFirst()`), only after a confirmed successful write; on failure, the
+dialog/pending action are left untouched and the existing failure toast is shown. This
+had been a known, documented limitation ("Save first" not auto-resuming — see the
+README's git history) rather than a bug fix; round 4's save-result plumbing made it
+straightforward to close properly. Declined: `save()` reporting its result to
+`NotepadScreen` for the Screen to react to — already unnecessary, since `save()`
+already surfaces failure via a toast (round 4), which the Screen doesn't need to
+duplicate; explicit tracking of whether `takePersistableUriPermission()` succeeded —
+already effectively covered by round 4's dead-`lastUri` self-healing, which absorbs
+the practical consequence without needing a separate signal; switching the
+`OpenDocument` picker's MIME filter from `text/plain` to `*/*` — our own files keep
+the `text/plain` MIME declared at creation regardless of their now-encrypted content,
+so this isn't currently a real gap, and a broader filter would make the picker less
+useful for a text-notes app.
