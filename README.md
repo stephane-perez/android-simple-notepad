@@ -23,13 +23,13 @@ anyone but their author.
 
 ## Requirements
 - JDK 17
-- Android SDK 34 (minSdk 26)
+- Android SDK 36 (minSdk 26)
 - Android Studio Koala (2024.1) or newer — optional, see "Building without Android
   Studio" below.
 
 ## Getting started
 Open this folder (`android-simple-notepad/`) directly in Android Studio — it's a
-self-contained Gradle project (Gradle 8.7, AGP 8.5.2, Kotlin 1.9.24) — and hit Run.
+self-contained Gradle project (Gradle 8.13, AGP 8.13.0, Kotlin 1.9.24) — and hit Run.
 No API keys, accounts, or network access are required; the app never touches the network.
 
 ## Building without Android Studio
