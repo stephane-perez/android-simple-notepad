@@ -132,6 +132,34 @@ Declined, with reasoning:
 - **DataStore vs. Android Backup** was already resolved in round 1
   (`android:allowBackup="false"`).
 
+### Round 6 — `NotepadViewModel.kt`, closer look
+Fixed: **`openDocument(uri)` ignored `loadDocument()`'s success/failure result** —
+even when opening failed (too large, corrupted, key missing), it still closed the
+Open-document overlay and persisted the URI as `lastUri`, so the next launch would
+retry (and then discard) a reference that had already failed once. Now returns early
+on failure, leaving the overlay open so the person can pick a different file, and
+never remembers a URI that didn't actually load. Also fixed: **the legacy plain-text
+path wasn't checked against the actual 100 KB limit** — the initial bounded read uses
+the looser `MAX_CONTAINER_BYTES` (correct for not-yet-classified incoming bytes, since
+an encrypted container is up to 33 bytes larger than its plaintext), but once a file
+is confirmed *not* to be one of ours, it's now checked again against the tighter
+`MAX_PLAINTEXT_BYTES` so the 100 KB limit is enforced uniformly regardless of a file's
+origin. Also fixed: `completeSaveAs()` took the persistable URI permission *before*
+confirming the write succeeded; reordered so a failed Save-As doesn't leave a
+permission grant persisted to a document that was never actually written.
+
+Raised, and left as-is on purpose: the app's plaintext necessarily lives in memory as
+a plain Kotlin `String` while editing (in `NotepadUiState` and the text field) — this
+is inherent to how any text editor works, and encryption here protects data *at rest*,
+not the in-memory content of an actively open, unlocked device (already stated in the
+README's guarantees/limits list). One concrete consequence worth naming: Android's
+Recents/app-switcher can show a screenshot thumbnail of the last visible screen,
+which could include note content. `WindowManager.LayoutParams.FLAG_SECURE` is the
+standard fix (blocks both that thumbnail and the person's own ability to screenshot
+the app), but it wasn't added without being asked for, since it removes a real
+capability (no more screenshots at all, including deliberate ones) rather than being
+a free hardening step — worth adding if that trade-off is wanted.
+
 ### Round 5 — `NotepadScreen.kt`
 Fixed: **"Save first" on a never-saved buffer closed the unsaved-changes dialog and
 cleared the pending New/Open action the moment the `CreateDocument` picker returned a

@@ -142,7 +142,12 @@ class NotepadViewModel(application: Application) : AndroidViewModel(application)
 
     /** User picked a row in the Open-document overlay, or a document from the system picker. */
     fun openDocument(uri: Uri) {
-        loadDocument(uri)
+        if (!loadDocument(uri)) {
+            // Failure toast (too large / decrypt failed / couldn't open) already set by
+            // loadDocument() — don't close the browser or remember this URI as if it
+            // had worked; let the person pick a different file instead.
+            return
+        }
         _uiState.update {
             it.copy(browsing = false, finding = false, query = "", replacement = "")
         }
@@ -206,6 +211,14 @@ class NotepadViewModel(application: Application) : AndroidViewModel(application)
             content = decrypted
         } else {
             // Doesn't look like one of ours at all — an ordinary legacy .txt file.
+            // Checked against MAX_PLAINTEXT_BYTES here (tighter than the
+            // MAX_CONTAINER_BYTES bound used for the initial bounded read above): the
+            // 100 KB limit should apply uniformly to any note this app holds, not just
+            // to our own encrypted ones.
+            if (bytes.size > CryptoManager.MAX_PLAINTEXT_BYTES) {
+                _uiState.update { it.copy(toast = context.getString(R.string.toast_file_too_large)) }
+                return false
+            }
             // Deliberately lenient UTF-8 decoding here (unlike the strict decoder in
             // CryptoManager.decrypt()): this path handles arbitrary external files we
             // don't control, which may be in any encoding — rejecting them outright
@@ -318,13 +331,6 @@ class NotepadViewModel(application: Application) : AndroidViewModel(application)
      */
     fun completeSaveAs(uri: Uri) {
         val context = getApplication<Application>()
-        runCatching {
-            context.contentResolver.takePersistableUriPermission(
-                uri,
-                android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                    android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            )
-        }
 
         val text = _uiState.value.text
         if (!writeEncrypted(uri, text)) {
@@ -334,6 +340,16 @@ class NotepadViewModel(application: Application) : AndroidViewModel(application)
             // instead of silently discarding the buffer — same principle as save()'s
             // own failure handling.
             return
+        }
+
+        // Persist the URI permission only now that the write actually succeeded —
+        // avoids persisting access to a document we never actually wrote to.
+        runCatching {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
         }
 
         val name = queryDisplayName(uri) ?: _uiState.value.filename
