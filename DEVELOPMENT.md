@@ -160,6 +160,29 @@ the app), but it wasn't added without being asked for, since it removes a real
 capability (no more screenshots at all, including deliberate ones) rather than being
 a free hardening step — worth adding if that trade-off is wanted.
 
+### Round 7 — `PreferencesRepository.kt` + `app/build.gradle.kts`
+`PreferencesRepository` was judged clean: only UI prefs and the last-opened URI are
+stored, never note content or key material; `LAST_URI` can reveal a filename via the
+URI string, accepted as low-priority metadata exposure (same spirit as the file
+listing already showing size/date). `app/build.gradle.kts` got two fixes:
+- **Explicit documentation that `release` must never sign with `app/debug.keystore`.**
+  In fact, `release` already has no `signingConfig` at all — `./gradlew
+  assembleRelease` currently produces an unsigned APK — so this was already
+  structurally impossible, not just unlikely; a comment now says so directly, and
+  spells out that a real release needs its own private, never-committed keystore.
+- **R8 + resource shrinking enabled for `release`** (`isMinifyEnabled` /
+  `isShrinkResources = true`, previously `false`). Standard practice, low risk for a
+  reflection-free Compose app; reduces attack surface and ease of reverse-engineering,
+  though — worth repeating — it does nothing to protect the AES key, which was never
+  in the code to begin with (it lives in the Android Keystore).
+
+Raised, not acted on: bumping `compileSdk`/`targetSdk` past 34 and refreshing pinned
+dependency versions. Both are legitimate maintenance items (Android 16/API 36 is
+Google Play's current target as of August 2026), but a blind bump risks a build break
+that can't be verified without a real Android SDK/build environment, which isn't
+available here — left as an explicit decision for whoever does the next release pass,
+rather than guessed at.
+
 ### Round 5 — `NotepadScreen.kt`
 Fixed: **"Save first" on a never-saved buffer closed the unsaved-changes dialog and
 cleared the pending New/Open action the moment the `CreateDocument` picker returned a

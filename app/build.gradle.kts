@@ -66,7 +66,16 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
         release {
-            isMinifyEnabled = false
+            // Never assign signingConfigs.getByName("debug") (or any config using
+            // app/debug.keystore) here. That key is committed to the repo and public
+            // by design — fine for debug/CI builds (see README, "Fixed debug signing
+            // key"), but it must never be used to sign anything distributed as a
+            // release. As of writing, `release` has no signingConfig at all, so
+            // `./gradlew assembleRelease` produces an unsigned APK; a real release
+            // needs its own keystore, generated once, kept private, and never
+            // committed to this repo.
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
