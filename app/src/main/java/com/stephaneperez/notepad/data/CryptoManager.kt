@@ -15,13 +15,14 @@ import javax.crypto.spec.GCMParameterSpec
  * Keystore.
  *
  * The key is generated once (lazily, on first save) and is non-exportable and scoped to
- * this app's UID — no other app, and no other device, can use it to decrypt an Angerona
- * file. Whether the key is backed by dedicated secure hardware (TEE/StrongBox) or a
- * software Keystore implementation depends on the device; the Keystore API guarantees
- * non-exportability either way, but not hardware backing specifically. The key is not
- * recoverable across an app uninstall or a factory reset: a fresh install always gets a
- * fresh key. Files encrypted under a since-lost key can no longer be decrypted — see
- * [decrypt] / [looksEncrypted] and the README for how the app surfaces that.
+ * this app's UID: another app cannot access it, and this file cannot be decrypted on
+ * another device without the corresponding key. Whether the key is additionally backed
+ * by dedicated secure hardware (TEE/StrongBox) or a software Keystore implementation
+ * depends on the device; the Keystore API guarantees non-exportability either way, but
+ * not hardware backing specifically. The key is not recoverable across an app uninstall
+ * or a factory reset: a fresh install always gets a fresh key. Files encrypted under a
+ * since-lost key can no longer be decrypted — see [decrypt] / [looksEncrypted] and the
+ * README for how the app surfaces that.
  */
 object CryptoManager {
     private const val KEYSTORE_PROVIDER = "AndroidKeyStore"
@@ -44,12 +45,17 @@ object CryptoManager {
     private val HEADER = MAGIC + byteArrayOf(FORMAT_VERSION)
 
     /**
-     * Upper bound on the whole on-disk container (header + IV + plaintext + GCM tag),
-     * enforced by [decrypt] itself before any allocation — not just by callers — so a
+     * Upper bound on the whole on-disk container (header + IV + plaintext + GCM tag).
+     * Enforced by [decrypt] itself before any allocation — not just by callers — so a
      * huge/malicious file can't force a large `copyOfRange`/`doFinal` allocation just by
-     * being handed to this class directly.
+     * being handed to this class directly. Public so callers reading raw, not-yet
+     * classified bytes (before knowing if they're one of ours or legacy plain text) can
+     * check against the correct, larger bound rather than the plaintext-only one.
      */
-    private const val MAX_CONTAINER_BYTES = HEADER_LENGTH + IV_LENGTH_BYTES + MAX_PLAINTEXT_BYTES + GCM_TAG_LENGTH_BYTES
+    const val MAX_CONTAINER_BYTES = HEADER_LENGTH + IV_LENGTH_BYTES + MAX_PLAINTEXT_BYTES + GCM_TAG_LENGTH_BYTES
+
+    /** Smallest a real container could ever be: header + IV + GCM tag, with an empty ciphertext. */
+    private const val MIN_CONTAINER_BYTES = HEADER_LENGTH + IV_LENGTH_BYTES + GCM_TAG_LENGTH_BYTES
 
     private val keyLock = Any()
 
@@ -107,7 +113,7 @@ object CryptoManager {
      * — see the README, "File encryption".
      */
     fun looksEncrypted(data: ByteArray): Boolean {
-        if (data.size < HEADER_LENGTH + IV_LENGTH_BYTES) return false
+        if (data.size < MIN_CONTAINER_BYTES) return false
         for (i in MAGIC.indices) if (data[i] != MAGIC[i]) return false
         return data[MAGIC.size] == FORMAT_VERSION
     }
@@ -127,12 +133,16 @@ object CryptoManager {
         // copyOfRange/doFinal allocation, so this class can't be handed a huge buffer
         // and OOM regardless of what the caller already checked.
         if (data.size > MAX_CONTAINER_BYTES) return null
-        val key = getExistingKey() ?: return null
 
-        val iv = data.copyOfRange(HEADER_LENGTH, HEADER_LENGTH + IV_LENGTH_BYTES)
-        val ciphertext = data.copyOfRange(HEADER_LENGTH + IV_LENGTH_BYTES, data.size)
-
+        // The whole body — including Keystore access, which can itself throw (corrupted
+        // keystore, provider unavailable) — is inside one runCatching, so this function
+        // truly never throws and always returns null on any failure, as documented.
         return runCatching {
+            val key = getExistingKey() ?: return@runCatching null
+
+            val iv = data.copyOfRange(HEADER_LENGTH, HEADER_LENGTH + IV_LENGTH_BYTES)
+            val ciphertext = data.copyOfRange(HEADER_LENGTH + IV_LENGTH_BYTES, data.size)
+
             val cipher = Cipher.getInstance(TRANSFORMATION)
             cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv))
             cipher.updateAAD(HEADER)

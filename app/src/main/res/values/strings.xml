@@ -54,6 +54,7 @@
     <string name="toast_no_matches">No matches</string>
     <string name="toast_file_too_large">File too large to open or save (max 100 KB)</string>
     <string name="toast_decrypt_failed">Could not decrypt this file — key missing or file corrupted</string>
+    <string name="toast_save_failed">Could not save — check storage access and try again</string>
     <plurals name="toast_replaced">
         <item quantity="one">%1$d match replaced</item>
         <item quantity="other">%1$d matches replaced</item>

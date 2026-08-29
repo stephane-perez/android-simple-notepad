@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
 
 /** A file entry surfaced by the in-app "Open document" list (see README §Platform adaptations). */
 data class LocalFileEntry(
@@ -39,9 +41,15 @@ class NotepadViewModel(application: Application) : AndroidViewModel(application)
             val lineNumbers = prefs.currentLineNumbers()
             _uiState.update { it.copy(wrap = wrap, lineNumbers = lineNumbers) }
 
-            prefs.currentLastUri()?.let { uriString ->
-                runCatching { Uri.parse(uriString) }.getOrNull()?.let { uri ->
-                    loadDocument(uri)
+            val lastUriString = prefs.currentLastUri()
+            if (lastUriString != null) {
+                val uri = runCatching { Uri.parse(lastUriString) }.getOrNull()
+                val restored = uri?.let { loadDocument(it) } ?: false
+                if (!restored) {
+                    // Dead reference (deleted file, revoked permission, malformed URI,
+                    // or now too large) — don't keep retrying it on every future
+                    // launch; start with a fresh untitled buffer instead.
+                    prefs.setLastUri(null)
                 }
             }
         }
@@ -109,7 +117,12 @@ class NotepadViewModel(application: Application) : AndroidViewModel(application)
 
     fun onDialogSaveFirst() {
         val pending = _uiState.value.confirm
-        save()
+        if (!save()) {
+            // Keep the dialog up (with the failure toast already set by save()) rather
+            // than proceeding to New/Open and silently losing the buffer — this was the
+            // main data-loss bug a second-opinion review caught, see README.
+            return
+        }
         _uiState.update { it.copy(confirm = null) }
         when (pending) {
             PendingAction.NEW -> performNew()
@@ -127,44 +140,83 @@ class NotepadViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch { prefs.setLastUri(uri.toString()) }
     }
 
-    private fun loadDocument(uri: Uri) {
+    /** Thrown by [readBytesUpTo] to distinguish "too large" from other read failures. */
+    private class TooLargeException : Exception()
+
+    /**
+     * Reads [stream] up to [maxBytes], throwing [TooLargeException] as soon as more than
+     * that has been read — never buffering an oversized file fully in memory just to
+     * measure it.
+     */
+    private fun readBytesUpTo(stream: InputStream, maxBytes: Int): ByteArray {
+        val buffer = ByteArrayOutputStream()
+        val chunk = ByteArray(8192)
+        var total = 0
+        while (true) {
+            val read = stream.read(chunk)
+            if (read == -1) break
+            total += read
+            if (total > maxBytes) throw TooLargeException()
+            buffer.write(chunk, 0, read)
+        }
+        return buffer.toByteArray()
+    }
+
+    /** Returns true if [uri] was successfully loaded into the buffer. */
+    private fun loadDocument(uri: Uri): Boolean {
         val context = getApplication<Application>()
-        runCatching {
-            context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-        }.getOrNull()?.let { bytes ->
-            if (bytes.size > CryptoManager.MAX_PLAINTEXT_BYTES) {
-                _uiState.update { it.copy(toast = context.getString(R.string.toast_file_too_large)) }
-                return
-            }
 
-            val content: String
-            if (CryptoManager.looksEncrypted(bytes)) {
-                val decrypted = CryptoManager.decrypt(bytes)
-                if (decrypted == null) {
-                    // This IS one of our files (magic header matches), but it couldn't
-                    // be decrypted — wrong/missing key or tampering. Unlike a genuine
-                    // legacy plain-text file, showing these raw bytes as "text" would
-                    // just be noise; warn instead of silently displaying it.
-                    _uiState.update { it.copy(toast = context.getString(R.string.toast_decrypt_failed)) }
-                    return
-                }
-                content = decrypted
-            } else {
-                // Doesn't look like one of ours at all — an ordinary legacy .txt file.
-                content = String(bytes, Charsets.UTF_8)
-            }
-
-            val name = queryDisplayName(uri) ?: "untitled.txt"
-            _uiState.update {
-                it.copy(
-                    filename = name,
-                    uri = uri,
-                    text = content,
-                    dirty = false,
-                    filePath = pathForDisplay(uri, name),
-                )
+        // Bound checked against MAX_CONTAINER_BYTES, not MAX_PLAINTEXT_BYTES: at this
+        // point we don't yet know if this is one of our encrypted files (whose
+        // container is up to 33 bytes larger than its plaintext) or a legacy plain-text
+        // file — using the plaintext-only bound here would wrongly reject a legitimate,
+        // maximally-sized note of our own on reopen.
+        val readResult = runCatching {
+            context.contentResolver.openInputStream(uri)?.use { stream ->
+                readBytesUpTo(stream, CryptoManager.MAX_CONTAINER_BYTES)
             }
         }
+
+        if (readResult.exceptionOrNull() is TooLargeException) {
+            _uiState.update { it.copy(toast = context.getString(R.string.toast_file_too_large)) }
+            return false
+        }
+        val bytes = readResult.getOrNull() ?: return false // couldn't open at all — stay silent, as before
+
+        val content: String
+        if (CryptoManager.looksEncrypted(bytes)) {
+            val decrypted = CryptoManager.decrypt(bytes)
+            if (decrypted == null) {
+                // This IS one of our files (magic header matches), but it couldn't
+                // be decrypted — wrong/missing key or tampering. Unlike a genuine
+                // legacy plain-text file, showing these raw bytes as "text" would
+                // just be noise; warn instead of silently displaying it.
+                _uiState.update { it.copy(toast = context.getString(R.string.toast_decrypt_failed)) }
+                return false
+            }
+            content = decrypted
+        } else {
+            // Doesn't look like one of ours at all — an ordinary legacy .txt file.
+            // Deliberately lenient UTF-8 decoding here (unlike the strict decoder in
+            // CryptoManager.decrypt()): this path handles arbitrary external files we
+            // don't control, which may be in any encoding — rejecting them outright
+            // would break opening perfectly legitimate legacy notes. The strict check
+            // only makes sense for our own encrypted format, which we know is always
+            // valid UTF-8 by construction.
+            content = String(bytes, Charsets.UTF_8)
+        }
+
+        val name = queryDisplayName(uri) ?: "untitled.txt"
+        _uiState.update {
+            it.copy(
+                filename = name,
+                uri = uri,
+                text = content,
+                dirty = false,
+                filePath = pathForDisplay(uri, name),
+            )
+        }
+        return true
     }
 
     private fun queryDisplayName(uri: Uri): String? {
@@ -187,12 +239,37 @@ class NotepadViewModel(application: Application) : AndroidViewModel(application)
     }
 
     /**
+     * Encrypts [text] and writes it to [uri]. Never touches UI state — callers decide
+     * what to do with the result. Returns false on any failure (I/O error, revoked
+     * permission, provider unavailable, `openOutputStream` returning null).
+     *
+     * Known limitation, accepted rather than solved: this opens in truncate mode
+     * (`"wt"`), so a write that fails partway (disk full, provider error) can leave the
+     * file empty or partially written rather than restoring the previous good content —
+     * true atomic replace would need a temp-document-then-rename dance whose
+     * reliability varies by SAF provider. See README, "Known adaptations".
+     */
+    private fun writeEncrypted(uri: Uri, text: String): Boolean {
+        val context = getApplication<Application>()
+        return runCatching {
+            val stream = context.contentResolver.openOutputStream(uri, "wt") ?: return@runCatching false
+            stream.use { it.write(CryptoManager.encrypt(text)) }
+            true
+        }.getOrElse { false }
+    }
+
+    /**
      * Save writes straight to the current file — no Save-as dialog, no confirmation
      * step. The buffer is always encrypted before it hits disk (see [CryptoManager]);
      * there is no way to save an Angerona file in plain text. Refuses to write buffers
      * over the 100 KB limit rather than silently truncating or crashing.
+     *
+     * Returns true on success. Callers that chain further actions after a save (e.g.
+     * "Save first" in the unsaved-changes dialog) must check this and not proceed on
+     * failure — an earlier version of this app didn't, which could silently discard the
+     * buffer if the write failed; see README.
      */
-    fun save() {
+    fun save(): Boolean {
         val state = _uiState.value
         val uri = state.uri
         val context = getApplication<Application>()
@@ -200,41 +277,60 @@ class NotepadViewModel(application: Application) : AndroidViewModel(application)
         if (uri == null) {
             // Untitled buffer: caller (UI) must launch ACTION_CREATE_DOCUMENT and then
             // call completeSaveAs(uri) with the result.
-            return
+            return false
         }
 
         if (state.text.toByteArray(Charsets.UTF_8).size > CryptoManager.MAX_PLAINTEXT_BYTES) {
             _uiState.update { it.copy(toast = context.getString(R.string.toast_file_too_large)) }
+            return false
+        }
+
+        val success = writeEncrypted(uri, state.text)
+        _uiState.update {
+            if (success) {
+                it.copy(dirty = false, menuOpen = false, toast = context.getString(R.string.toast_saved, it.filePath))
+            } else {
+                it.copy(toast = context.getString(R.string.toast_save_failed))
+            }
+        }
+        return success
+    }
+
+    /**
+     * Called after the platform's ACTION_CREATE_DOCUMENT picker returns a destination.
+     * Writes to [uri] first and only switches the app's current document over to it —
+     * updating `uri`/`filename`/`filePath` — once that write has actually succeeded, so
+     * a failed Save-As can't leave the UI pointing at a file that was never written.
+     */
+    fun completeSaveAs(uri: Uri) {
+        val context = getApplication<Application>()
+        runCatching {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+        }
+
+        val text = _uiState.value.text
+        if (!writeEncrypted(uri, text)) {
+            _uiState.update { it.copy(toast = context.getString(R.string.toast_save_failed)) }
             return
         }
 
-        runCatching {
-            context.contentResolver.openOutputStream(uri, "wt")?.use { out ->
-                out.write(CryptoManager.encrypt(state.text))
-            }
-        }.onSuccess {
-            _uiState.update {
-                it.copy(
-                    dirty = false,
-                    menuOpen = false,
-                    toast = context.getString(R.string.toast_saved, it.filePath),
-                )
-            }
-        }
-    }
-
-    /** Called after the platform's ACTION_CREATE_DOCUMENT picker returns a destination. */
-    fun completeSaveAs(uri: Uri) {
-        val context = getApplication<Application>()
-        context.contentResolver.takePersistableUriPermission(
-            uri,
-            android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-        )
         val name = queryDisplayName(uri) ?: _uiState.value.filename
-        _uiState.update { it.copy(uri = uri, filename = name, filePath = pathForDisplay(uri, name)) }
+        val filePath = pathForDisplay(uri, name)
+        _uiState.update {
+            it.copy(
+                uri = uri,
+                filename = name,
+                filePath = filePath,
+                dirty = false,
+                menuOpen = false,
+                toast = context.getString(R.string.toast_saved, filePath),
+            )
+        }
         viewModelScope.launch { prefs.setLastUri(uri.toString()) }
-        save()
     }
 
     /** Take persistable permission right after ACTION_OPEN_DOCUMENT returns, before loading. */
